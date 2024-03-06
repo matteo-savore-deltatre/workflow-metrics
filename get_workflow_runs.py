@@ -97,7 +97,9 @@ jq_query = (
 )
 
 # Construct the gh api command
-cmd = f'gh api repos/{repo_owner}/{repo_name}/actions/runs --paginate --jq \'{jq_query}\''
+cmd = (f'gh api repos/{repo_owner}/{repo_name}/actions/runs --paginate '
+       f'--method GET -F created={start_date.strftime("%Y-%m-%d")}..{end_date.strftime("%Y-%m-%d")} '
+       f'--jq \'{jq_query}\'')
 
 # Send the command and retrieve the output
 output = subprocess.check_output(cmd, shell=True, text=True)
@@ -117,9 +119,12 @@ for line in output.strip().split('\n'):
 # Add the duration field to each workflow run, calculated as the difference between the updated_at and run_started_at fields
 for item in workflow_runs:
     updated_at = datetime.fromisoformat(item['updated_at'].replace('Z', '+00:00'))
+    created_at = datetime.fromisoformat(item['created_at'].replace('Z', '+00:00'))
     run_started_at = datetime.fromisoformat(item['run_started_at'].replace('Z', '+00:00'))
     duration = (updated_at - run_started_at).total_seconds()
+    queue_time = (run_started_at - created_at).total_seconds()
     item['duration'] = duration
+    item['queue'] = queue_time
 
 # Print the workflow runs as raw.json file
 with open(RUNS_FILE, 'w') as f:
