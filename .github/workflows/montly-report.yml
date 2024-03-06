@@ -1,0 +1,51 @@
+name: Monthly SLOs Report
+
+on: 
+  workflow_dispatch
+  # schedule:
+  #   - cron: '0 0 1 * *'
+
+jobs:
+  evaluate-actions-consumption:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Set dates
+        run: |
+          echo "START_DATE=$(date -d '-14 days' +%Y-%m-%d)" >> "$GITHUB_ENV"
+          echo "END_DATE=$(date +%Y-%m-%d)" >> "$GITHUB_ENV"
+          
+      - name: Test docker action
+        uses: matteo-savore-deltatre/workflow-metrics
+        env:
+          GH_TOKEN: ${{ env.GH_TOKEN }}
+          OWNER_NAME: ${{ github.repository_owner }}
+          START_DATE: ${{ env.START_DATE }}
+          END_DATE: ${{ env.END_DATE }}
+          DELAY_BETWEEN_QUERY: 5
+    
+      - name: Convert org-workflow-stats.csv to stats-table.md markdown table
+        run: |
+          echo -e "## Table View\n" > stats-table.md
+          header=$(head -n 1 org-workflow-stats.csv | sed 's/,/|/g' | sed 's/_/ /g')
+          echo -e "|${header}|" >> stats-table.md
+          metadata=$(head -n 1 org-workflow-stats.csv | sed 's/,/|/g' | sed 's/[^|]/-/g')
+          echo -e "|${metadata}|" >> stats-table.md
+          tail -n +2 org-workflow-stats.csv | sed 's/,/|/g; s/^/|/; s/$/|/' >> stats-table.md
+
+      - name: Publish result to a new issue
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: Workflow runs summary for `${{ env.OWNER_NAME }}` org (${{ env.START_DATE }} - ${{ env.END_DATE }})
+          content-filepath: stats-table.md
+
+      - name: Upload all .txt .csv .md files to artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: workflow-stats
+          path: |
+            stats-table.md
+            org-workflow-stats.csv
+            org-runs.json
