@@ -18,7 +18,7 @@ jobs:
           echo "END_DATE=$(date +%Y-%m-%d)" >> "$GITHUB_ENV"
           
       - name: Test docker action
-        uses: matteo-savore-deltatre/workflow-metrics
+        uses: matteo-savore-deltatre/workflow-metrics@0.4.8
         env:
           GH_TOKEN: ${{ env.GH_TOKEN }}
           OWNER_NAME: ${{ github.repository_owner }}
