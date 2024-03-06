@@ -1,5 +1,5 @@
 FROM python:3.9-slim-buster
-LABEL org.opencontainers.image.source https://github.com/kittychiu/workflow-metrics
+LABEL org.opencontainers.image.source https://github.com/matteo-savore-deltatre/workflow-metrics
 
 COPY *.py /
 
